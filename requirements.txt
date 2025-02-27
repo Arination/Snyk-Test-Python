@@ -1,1 +1,2 @@
-#no dependencies
+Flask
+mysql-connector-python
