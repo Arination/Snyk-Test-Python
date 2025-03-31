@@ -1,0 +1,56 @@
+name: Semgrep
+
+on:
+  # Scan changed files in PRs (diff-aware scanning):
+  pull_request: {}
+  
+  # Scan on-demand through GitHub Actions interface:
+  workflow_dispatch: {}
+  
+  # Scan mainline branches if there are changes to workflow file:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - .github/workflows/semgrep.yml
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  semgrep:
+    name: semgrep/ci
+    runs-on: self-hosted
+    container:
+      image: semgrep/semgrep
+    
+    # Skip any PR created by dependabot to avoid permission issues:
+    if: (github.actor != 'dependabot[bot]')
+    
+    steps:
+      # Fetch project source with GitHub Actions Checkout
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      # Run Semgrep scan with diff-aware mode for PRs
+      - name: Semgrep Scan
+        run: semgrep ci
+        env:
+          # Connect to Semgrep AppSec Platform through your token
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+          
+      # Optional: Save results as SARIF for GitHub Security tab
+      - name: Save SARIF results
+        if: always()
+        run: semgrep ci --sarif > semgrep-results.sarif
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+          
+      - name: Upload SARIF file
+        if: always()
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: semgrep-results.sarif
