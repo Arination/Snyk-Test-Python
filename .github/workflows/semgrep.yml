@@ -22,7 +22,7 @@ permissions:
 jobs:
   semgrep:
     name: semgrep/ci
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     container:
       image: semgrep/semgrep
     
